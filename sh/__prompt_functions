@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+
+__prompt_status () {
+  [ $__prompt_last_status -eq 0 ] && return 1
+  echo $__prompt_last_status
+}
+
+__prompt_directory () {
+  printf ${PWD/$HOME/"~"}
+}
+
+__prompt_short_directory () {
+  local length=20
+  local p=${PWD/#$HOME/\~} b s
+  while [ "$p" ] && [ ${#p} -gt $length ]; do
+    re_match "$p" '^(\/?\.?.)[^\/]*(.*)$'
+    b+=${re_match[1]}
+    p=${re_match[2]}
+  done
+  echo "$b$p"
+}
+
+__prompt_username () {
+  [ -n "$SSH_CLIENT" ] && echo "$USER"
+}
+
+export __prompt_hostname=$(hostname -s)
+
+__prompt_hostname () {
+  [ -n "$SSH_CLIENT" ] && echo $__prompt_hostname
+}
+
+__prompt_git () {
+  if hash git 2>/dev/null; then
+    if branch=$( { git symbolic-ref --quiet HEAD || git rev-parse --short HEAD; } 2>/dev/null ); then
+      branch=${branch##*/}
+      printf "%s" "${branch:-unknown}"
+      return
+    fi
+  fi
+  return 1
+}
+
+__prompt_rbenv () {
+  [ "$RBENV_VERSION" ] && [ "$RBENV_VERSION" != "system" ] && printf "$RBENV_VERSION"
+}
+
+__prompt_virtualenv () {
+  [ "$VIRTUAL_ENV" ] && printf "${VIRTUAL_ENV##*/}"
+}
+
+__prompt_node () {
+  # detect package.json
+  # print "name" field
+  local package && package="$(upsearch package.json)" && \
+  re_match "$(cat "$package")" '\"name\": \"?([^\",]*)' && \
+  printf "${re_match[1]}"
+}
+
+__prompt_vagrant () {
+  # detect Vagrantfile
+  # print .vagrant/machines/$machine_name
+  local vagrantfile && vagrantfile="$(upsearch Vagrantfile)" || return 1
+  local vagrantdir="${vagrantfile%/*}/.vagrant/machines"
+  [ -d "$vagrantdir" ]  \
+  && for f in $vagrantdir/*; do printf "${f##*/}"; done \
+  || return 1
+}
+
+__prompt_clojure () {
+  # detect project.clj or build.boot
+  # print project name
+  local file
+  if file="$(upsearch project.clj)"; then
+    re_match "$(cat "$file")" "\(defproject +([^ )]+)" && \
+    printf "${re_match[1]}"
+  elif file="$(upsearch build.boot)"; then
+      re_match "$(cat "$file")" ":project +'([^ ]+)" && \
+      printf "${re_match[1]}"
+  else
+    return 1
+  fi
+}
+
+__prompt_jobs () {
+  local job_count
+  job_count=$(count_lines "$(jobs -p)")
+  [[ $job_count -gt 0 ]] || return 1;
+  printf "%s" "$job_count"
+}
+
+__prompt_tmux () {
+  [ "$TMUX" ] && return 1
+  local session_count=$(count_lines $(tmux ls 2>/dev/null))
+  [ $session_count -gt 0 ] && printf "%s" $session_count
+}
+
+__prompt_datetime () {
+  date +"%r"
+}
+
+__prompt_short_datetime () {
+  date +"%H:%M:%S"
+}

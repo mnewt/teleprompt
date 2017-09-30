@@ -1,0 +1,5 @@
+#!/usr/bin/env zsh
+
+dir=${0:a:h}
+
+zsh "$dir/test_bash_prompt"

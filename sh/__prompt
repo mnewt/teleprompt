@@ -1,0 +1,137 @@
+#!/usr/bin/env bash
+# Line style prompt
+
+# Configure shell specific features
+if [ "$BASH_VERSION" ]; then
+  shopt -s extglob
+  dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+  array_index=0
+elif [ "$ZSH_VERSION" ]; then
+  autoload -Uz regexp-replace
+  dir=${0:a:h}
+  array_index=1
+fi
+
+. "$dir/__prompt_util"
+. "$dir/__prompt_theme"
+. "$dir/__prompt_functions"
+
+__prompt_last_status=0
+
+__prompt () {
+  # Save the error code in the global scope so the display function can see it
+  __prompt_last_status=$?
+
+  [ "$__prompt_prompt" ] || echo No teleprompt theme set! Oh no!
+
+  local left_prompt right_prompt
+  declare -a left_keys left_values right_keys right_values
+
+  # Obtain prompt values
+  for key in "${__prompt_left[@]}"; do
+    if value="$(__prompt_$key)"; then
+      left_keys+=("$key")
+      local format_key="__prompt_${key}_format"
+      eval "local format=\"\${$format_key}\""
+      left_values+=( "$(printf "$format" "$value")" )
+    fi
+  done
+  for key in "${__prompt_right[@]}"; do
+    if value="$(__prompt_$key)"; then
+      right_keys+=("$key")
+      local format_key="__prompt_${key}_format"
+      eval "local format=\"\${$format_key}\""
+      right_values+=( "$(printf "$format" "$value")" )
+    fi
+  done
+
+  # Figure out the length and whether everything will fit on one line
+  local raw_left
+  for s in "${left_values[@]}"; do
+    raw_left+="$s"
+  done
+  local raw_right
+  for s in "${right_values[@]}"; do
+    raw_right+="$s"
+  done
+  local raw_line=$raw_left$raw_right
+  local length=${#raw_line}
+
+  # COLUMNS is not set to a value the first time after login
+  [ "$COLUMNS" ] || COLUMNS=$(tput cols)
+  local padding=$(($COLUMNS - $length))
+
+  # Try to shorten output if it's too wide to fit on one line
+  if [ $padding -lt 0 ]; then
+    local l=$(( ${#left_keys[@]} + $array_index))
+    for ((i=$array_index; i<$l; i++)); do
+      local f="__prompt_short_${left_keys[i]}" value
+      if declare -f $f >/dev/null && value="$($f)"; then
+        old_value="${left_values[i]}"
+        local format_key="__prompt_${left_keys[i]}_format"
+        eval "local format=\"\${$format_key}\""
+        left_values[$i]="$(printf "$format" "$value")"
+        padding=$(($padding + ${#old_value} - ${#left_values[$i]}))
+        [[ $padding -ge 0 ]] && break
+      fi
+    done
+    local l=$(( ${#right_keys[@]} + $array_index))
+    for ((i=$array_index; i<$l; i++)); do
+      local f="__prompt_short_${right_keys[i]}" value
+      if declare -f $f >/dev/null && value="$($f)"; then
+        old_value="${right_values[i]}"
+        local format_key="__prompt_${right_keys[i]}_format"
+        eval "local format=\"\${$format_key}\""
+        right_values[$i]="$(printf "$format" "$value")"
+        padding=$(($padding + ${#old_value} - ${#right_values[$i]}))
+        [[ $padding -ge 0 ]] && break
+      fi
+    done
+    if [ $padding -lt 0 ]; then
+      right_keys=()
+      raw_right=""
+      for s in "${right_values[@]}"; do
+        raw_right+="$s"
+      done
+      padding=$(($padding + ${#raw_right}))
+    fi
+    if [ $padding -lt 0 ]; then
+      # Tiny prompt for tiny screens
+      left_keys=( directory )
+      left_values=( $(__prompt_short_directory) )
+      raw_left=
+      for s in "${left_values[@]}"; do
+        raw_left+="$s"
+      done
+      padding=$(($COLUMNS - ${#raw_left}))
+    fi
+  fi
+
+  # Print out left side
+  local l=$(( ${#left_keys[@]} + $array_index))
+  for ((i=$array_index; i<$l; i++)); do
+    local bg_key="__prompt_${left_keys[$i]}_bg"
+    local fg_key="__prompt_${left_keys[$i]}_fg"
+    eval "local bg=\"\${$bg_key}\""
+    eval "local fg=\"\${$fg_key}\""
+    with_color "$bg" "$fg" "${left_values[$i]}"
+  done
+
+  # Pad so that left and right sides are justified and take up the whole line
+  local prompt_line="${__prompt_line_format:0:$padding}"
+  with_color "$__prompt_line_bg" "$__prompt_line_fg" "$prompt_line"
+
+  # Print out right side
+  local l=$(( ${#right_keys[@]} + $array_index))
+  for ((i=$array_index; i<$l; i++)); do
+    local bg_key="__prompt_${right_keys[$i]}_bg"
+    local fg_key="__prompt_${right_keys[$i]}_fg"
+    eval "local bg=\"\${$bg_key}\""
+    eval "local fg=\"\${$fg_key}\""
+    with_color "$bg" "$fg" "${right_values[$i]}"
+  done
+}
+
+PS1="$__prompt_prompt" && export PS1
+
+PROMPT_COMMAND='__prompt' && export PROMPT_COMMAND

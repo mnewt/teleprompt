@@ -1,0 +1,68 @@
+#!/usr/bin/env fish
+# Test the output and benchmark the components of 'fish_prompt'
+
+# The number of times each helper command is run
+set iterations 200
+
+set DIR (cd (dirname (status -f)); and pwd)
+
+for f in "$DIR/../conf.d/"* "$DIR/../functions/"*
+  source "$f"
+end
+
+function benchmark_command
+  # $argv: command to benchmark
+  set -l command_start_time (date '+%s%N')
+  for i in (seq $iterations)
+    eval $argv >/dev/null
+  end
+  set -l command_end_time (date '+%s%N')
+	set -l command_duration (math "$command_end_time - $command_start_time")
+  set -l minutes (math "$command_duration / 60000000000")
+	set -l seconds (math "$command_duration % 60000000000 / 1000000000")
+	set -l milliseconds (math "$command_duration % 1000000000 / 1000000")
+
+  set -l result (eval $argv)
+  table_row "$argv" "$result" "$seconds.$milliseconds"
+end
+
+function setup
+  set -g SSH_CLIENT test
+  source (rbenv init -|psub)
+  rbenv shell 2.4.0
+  set -g VIRTUAL_ENV "$DIR/venv"
+end
+
+function teardown
+  rbenv shell system
+end
+
+trap teardown EXIT
+
+setup
+
+fish_prompt >/dev/null
+
+echo Running each helper $iterations times:
+echo
+
+table_divider 3
+table_row command output seconds
+table_divider 3
+
+for key in $fish_prompt_left $fish_prompt_right
+  benchmark_command fish_prompt_$key
+end
+
+table_divider 3
+
+set p (fish_prompt)
+set -l raw_line (string replace -ra "(\033[^m]+m)|(\017)" "" "$p")
+echo "raw line:"
+table_divider 1
+echo "$raw_line"
+table_divider 1
+echo "colorful line:"
+table_divider 1
+echo "$p"
+table_divider 1

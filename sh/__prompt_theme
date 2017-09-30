@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+
+__prompt_status_bg=001
+__prompt_status_fg=255
+__prompt_status_format=' %i '
+
+__prompt_username_bg=003
+__prompt_username_fg=000
+__prompt_username_format=' %s '
+
+__prompt_hostname_bg=002
+__prompt_hostname_fg=000
+__prompt_hostname_format=' %s '
+
+__prompt_git_bg=E6623D
+__prompt_git_fg=F1F1E9
+__prompt_git_format=' %s '
+
+__prompt_rbenv_bg=207
+__prompt_rbenv_fg=255
+__prompt_rbenv_format=' %s '
+
+__prompt_virtualenv_bg=027
+__prompt_virtualenv_fg=255
+__prompt_virtualenv_format=' %s '
+
+__prompt_node_bg=024
+__prompt_node_fg=255
+__prompt_node_format=' %s '
+
+__prompt_clojure_bg=055
+__prompt_clojure_fg=255
+__prompt_clojure_format=' %s '
+
+__prompt_vagrant_bg=190
+__prompt_vagrant_fg=000
+__prompt_vagrant_format=' %s '
+
+__prompt_directory_bg=006
+__prompt_directory_fg=016
+__prompt_directory_format=' %s '
+
+__prompt_jobs_bg=240
+__prompt_jobs_fg=007
+__prompt_jobs_format=' jobs: %s '
+
+__prompt_tmux_bg=244
+__prompt_tmux_fg=000
+__prompt_tmux_format=' tmux: %s '
+
+__prompt_datetime_bg=252
+__prompt_datetime_fg=232
+__prompt_datetime_format=' %s '
+
+__prompt_line_bg=237
+__prompt_line_fg=237
+# The space between the left and right sections. It is truncated as needed
+__prompt_line_format='                                                                                                                                                                                                                                                      '
+
+# bash needs all escape codes in PS1 bracketed by \[ and \]
+__prompt_prompt="\n\[$(declare -f iterm2_prompt_mark > /dev/null && $(iterm2_prompt_mark))\]\[\033[1;1m\]\$\[\033[0m\] "
+
+__prompt_left=( status username hostname git rbenv virtualenv node vagrant clojure directory )
+__prompt_right=( jobs tmux datetime )

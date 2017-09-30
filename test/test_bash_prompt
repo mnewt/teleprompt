@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+# Test the output and benchmark the components of '__prompt'
+
+# The number of times each helper command is run
+iterations=1
+
+if [ "$BASH_VERSION" ]; then
+  shopt -s extglob
+  dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+elif [ "$ZSH_VERSION" ]; then
+  autoload -Uz regexp-replace
+  dir=${0:a:h}
+fi
+
+. "$dir/../sh/__prompt_theme"
+. "$dir/../sh/__prompt_functions"
+. "$dir/../sh/__prompt"
+
+# Print a divider for a simple table
+# table_divider NUMBER_OF_COLUMNS
+table_divider () {
+  col_length=$((($(tput cols) - 2) / $1 - 3))
+  printf "+ "
+  for col in $(seq $1); do
+    for ((i=1; i<=$col_length; i++)); do printf "%s" "-";done
+    # printf '%0.s-' $(seq $col_length)
+    printf " + "
+  done
+  echo
+}
+
+# Print a justified row for a simple table
+# table_row COLUMN_1 [COLUMN_2 ...]
+table_row () {
+  col_length=$((($(tput cols) - 2) / $# - 3))
+  printf "| "
+  for col in "$@"; do
+    (( ${#col} > $col_length )) && col="${col:0:(($col_length-3))}..."
+    printf "%${col_length}s | " "$col"
+  done
+  echo
+}
+
+benchmark_command () {
+  # $1: command to benchmark
+  local command_start_time=$(date '+%s%N')
+  for i in $(seq $iterations); do
+    eval "$@" >/dev/null
+  done
+  local command_end_time=$(date '+%s%N')
+	local command_duration=$(($command_end_time - $command_start_time))
+  local minutes=$(($command_duration / 60000000000))
+	local seconds=$(($command_duration % 60000000000 / 1000000000))
+	local milliseconds=$(($command_duration % 1000000000 / 1000000))
+
+  table_row "$@" " $(eval "$@")" "$(printf "%d.%02d" $seconds $milliseconds)"
+}
+
+teardown () {
+  rbenv shell system
+  tmux kill-session -t test
+  popd >/dev/null
+}
+
+setup () {
+  pushd "$dir/../test" >/dev/null
+
+  SSH_CLIENT=test
+  eval "$(rbenv init -)"
+  rbenv shell 2.4.0
+  VIRTUAL_ENV="$dir/venv"
+  sleep 1000 &
+  tmux new-session -d -s test sleep 1000
+}
+
+trap teardown EXIT
+
+echo Running each helper $iterations times:
+
+setup
+
+table_divider 3
+table_row command output seconds
+table_divider 3
+
+benchmark_command ":"
+for v in "${__prompt_left[@]}"; do
+  benchmark_command "__prompt_$v"
+done
+for v in "${__prompt_right[@]}"; do
+  benchmark_command "__prompt_$v"
+done
+
+
+table_divider 3
+
+table_divider 1
+which nonexistent >/dev/null
+__prompt
+table_divider 1
