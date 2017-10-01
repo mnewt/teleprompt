@@ -34,8 +34,8 @@ function fish_prompt -d 'Write out a fancy prompt'
   end
 
   # COLUMNS is not set to a value the first time after login
-  test -z "$COLUMNS"; or set COLUMNS (tput cols)
-  set -l padding (math $COLUMNS - $length)
+  test -z "$COLUMNS"; and set cols $COLUMNS; or set cols (tput cols)
+  set -l padding (math $cols - $length)
 
   # Try to shorten output if it's too wide to fit on one line
   if test $padding -lt 0
@@ -57,7 +57,7 @@ function fish_prompt -d 'Write out a fancy prompt'
       # Tiny prompt for tiny screens
       set left_keys directory
       set left_values (eval fish_prompt_short_directory)
-      set padding (math $COLUMNS - (string length "$left_values"))
+      set padding (math $cols - (string length "$left_values"))
     end
   end
 
