@@ -7,8 +7,10 @@ set -g fish_prompt_username_format ' %s '
 set -g fish_prompt_hostname_bg 002
 set -g fish_prompt_hostname_fg 000
 set -g fish_prompt_hostname_format ' %s '
-set -g fish_prompt_git_bg E6623D
-set -g fish_prompt_git_fg F1F1E9
+# set -g fish_prompt_git_bg E6623D
+set -g fish_prompt_git_bg 167
+# set -g fish_prompt_git_fg F1F1E9
+set -g fish_prompt_git_fg 230
 set -g fish_prompt_git_format ' %s '
 set -g fish_prompt_rbenv_bg 207
 set -g fish_prompt_rbenv_fg 255

@@ -41,7 +41,6 @@ function fish_prompt -d 'Write out a fancy prompt'
   if test $padding -lt 0
     for i in (seq 1 (count "$left_keys"))
       set -l f fish_prompt_short_$left_keys[$i]
-      echo f: $f
       if functions -q $f; and set -l value (eval $f)
         set -l old_value $left_values[$i]
         set left_values[$i] $value

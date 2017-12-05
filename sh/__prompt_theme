@@ -12,8 +12,8 @@ __prompt_hostname_bg=002
 __prompt_hostname_fg=000
 __prompt_hostname_format=' %s '
 
-__prompt_git_bg=E6623D
-__prompt_git_fg=F1F1E9
+__prompt_git_bg=167
+__prompt_git_fg=230
 __prompt_git_format=' %s '
 
 __prompt_rbenv_bg=207
